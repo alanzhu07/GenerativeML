@@ -1,0 +1,11 @@
+/.DS_Store
+/__init__.py
+/__pycache__
+/a.jpeg
+/album_covers
+/data.csv
+/generated.jpg
+/rym.html
+/rym_scraper.py
+/train.jpg
+/vae
