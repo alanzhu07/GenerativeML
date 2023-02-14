@@ -49,7 +49,9 @@ class Decoder(nn.Module):
         self.image_size = image_size
         self.last_hidden_dim = hidden_dims[-1]
         self.out_height, self.out_width = image_size
+        out_padding = []
         for _ in range(len(hidden_dims)):
+            out_padding.append(((self.out_height - kernel_size) % 2, (self.out_width - kernel_size) % 2))
             self.out_height = (self.out_height - kernel_size + 2) // stride + 1
             self.out_width = (self.out_width - kernel_size + 2) // stride + 1
 
@@ -57,12 +59,13 @@ class Decoder(nn.Module):
         
         dims = hidden_dims[::-1] + [in_channels]
         conv_t = []
-        for dim1, dim2 in zip(dims[:-1], dims[1:]):
-            conv_t.append(nn.ConvTranspose2d(dim1, dim2, kernel_size = kernel_size, stride = stride, padding = 1, output_padding = 1))
+        for dim1, dim2, output_padding in zip(dims[:-1], dims[1:], out_padding[::-1]):
+            conv_t.append(nn.ConvTranspose2d(dim1, dim2, kernel_size = kernel_size, stride = stride, padding = 1, output_padding = output_padding))
             conv_t.append(nn.ReLU())
         self.conv_t = nn.Sequential(*conv_t)
 
-        self.output_conv = nn.ConvTranspose2d(in_channels, in_channels, kernel_size = kernel_size, stride = 1, padding = 1)
+        final_output_padding = -(kernel_size - 3) 
+        self.output_conv = nn.ConvTranspose2d(in_channels, in_channels, kernel_size = kernel_size, stride = 1, padding = 1, output_padding = final_output_padding)
 
     def forward(self, x):
         x = self.fc(x)
