@@ -12,13 +12,16 @@ class Discriminator(nn.Module):
         super().__init__()
 
         dims = [in_channels] + hidden_dims
+        paddings = [1] * len(dims)
+        paddings[-1] = 0
+
         conv = []
-        for dim1, dim2 in zip(dims[:-1], dims[1:]):
-            conv.append(nn.Conv2d(dim1, dim2, kernel_size = kernel_size, stride = stride, padding = 1, bias = False))
+        for dim1, dim2, pad in zip(dims[:-1], dims[1:], paddings):
+            conv.append(nn.Conv2d(dim1, dim2, kernel_size = kernel_size, stride = stride, padding = pad, bias = False))
             conv.append(nn.BatchNorm2d(dim2))
             conv.append(nn.LeakyReLU(0.02, inplace=True))
         
-        conv.append(nn.Conv2d(dims[-1], 1, kernel_size = kernel_size, stride = stride, padding = 0, bias = False))
+        conv.append(nn.Conv2d(dims[-1], 1, kernel_size = kernel_size, stride = stride, padding = paddings[-1], bias = False))
         conv.append(nn.Sigmoid())
 
         self.net = nn.Sequential(*conv)
@@ -38,13 +41,16 @@ class Generator(nn.Module):
         super().__init__()
 
         dims = [noise_dim] + hidden_dims
+        paddings = [1] * len(dims)
+        paddings[0] = 0
+
         conv = []
-        for dim1, dim2 in zip(dims[:-1], dims[1:]):
-            conv.append(nn.ConvTranspose2d(dim1, dim2, kernel_size = kernel_size, stride = stride, padding = 1, bias = False))
+        for dim1, dim2, pad in zip(dims[:-1], dims[1:], paddings):
+            conv.append(nn.ConvTranspose2d(dim1, dim2, kernel_size = kernel_size, stride = stride, padding = pad, bias = False))
             conv.append(nn.BatchNorm2d(dim2))
             conv.append(nn.LeakyReLU())
         
-        conv.append(nn.Conv2d(dims[-1], out_channels, kernel_size = kernel_size, stride = stride, padding = 0, bias = False))
+        conv.append(nn.ConvTranspose2d(dims[-1], out_channels, kernel_size = kernel_size, stride = stride, padding = paddings[-1], bias = False))
         conv.append(nn.Tanh())
 
         self.net = nn.Sequential(*conv)
@@ -53,7 +59,7 @@ class Generator(nn.Module):
         return self.net(x)
 
 
-class GAN(nn.Module):
+class DCGAN(nn.Module):
     def __init__(self,
         noise_dim,
         in_channels = 3,
@@ -75,12 +81,12 @@ class GAN(nn.Module):
     def generate(self, size):
         noise = torch.randn(size, self.noise_dim, 1, 1, device=self.device)
         output = self.generator(noise)
-        labels = torch.full(size, 0., device=self.device)
+        labels = torch.full((size,), 0., device=self.device)
         return output, labels
 
     def discriminate(self, input, label):
         output = self.discriminator(input).view(-1)
-        labels = torch.full(input.size(0), label, device=self.device)
+        labels = torch.full((input.size(0),), label, device=self.device)
         return output, labels
         
     def generate_and_discriminate(self, size):
