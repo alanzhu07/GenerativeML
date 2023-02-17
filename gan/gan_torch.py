@@ -51,7 +51,7 @@ class Generator(nn.Module):
             conv.append(nn.LeakyReLU())
         
         conv.append(nn.ConvTranspose2d(dims[-1], out_channels, kernel_size = kernel_size, stride = stride, padding = paddings[-1], bias = False))
-        conv.append(nn.Tanh())
+        conv.append(nn.Sigmoid())
 
         self.net = nn.Sequential(*conv)
 
